@@ -50,9 +50,10 @@ export default function PublicJournal() {
       <div className={styles.loggedIn}>
         <div className={styles.headerActions}>
           <span className={styles.logo}>{username}</span>
-          {user && (
-            <button onClick={() => navigate('/journal')} className={styles.navBtn}>Admin</button>
-          )}
+          {user
+            ? <button onClick={() => navigate('/journal')} className={styles.navBtn}>Admin</button>
+            : <button onClick={() => navigate('/journal')} className={styles.navBtn}>Login</button>
+          }
         </div>
 
         <div className={styles.scrollable}>
