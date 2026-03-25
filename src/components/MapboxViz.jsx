@@ -13,6 +13,7 @@ export default function MapboxViz({ lat, lng }) {
   const mapRef = useRef()
   const markerRef = useRef()
   const readyRef = useRef(false)
+  const coordsRef = useRef({ lat, lng })
 
   useEffect(() => {
     const map = new mapboxgl.Map({
@@ -39,15 +40,13 @@ export default function MapboxViz({ lat, lng }) {
     map.once('idle', () => {
       readyRef.current = true
       containerRef.current.classList.add(styles.ready)
-      map.flyTo({
-        center: DEFAULT_CENTER,
-        zoom: DEFAULT_ZOOM,
-        pitch: 0,
-        bearing: 0,
-        duration: 2500,
-        curve: 2,
-        essential: true,
-      })
+      const { lat, lng } = coordsRef.current
+      if (lat != null && lng != null) {
+        markerRef.current.setLngLat([lng, lat]).addTo(map)
+        map.flyTo({ center: [lng, lat], zoom: 15, pitch: 55, bearing: -15, duration: 7000, curve: 3, essential: true })
+      } else {
+        map.flyTo({ center: DEFAULT_CENTER, zoom: DEFAULT_ZOOM, pitch: 0, bearing: 0, duration: 2500, curve: 2, essential: true })
+      }
     })
 
     mapRef.current = map
@@ -55,6 +54,10 @@ export default function MapboxViz({ lat, lng }) {
 
     return () => map.remove()
   }, [])
+
+  useEffect(() => {
+    coordsRef.current = { lat, lng }
+  }, [lat, lng])
 
   useEffect(() => {
     const map = mapRef.current
