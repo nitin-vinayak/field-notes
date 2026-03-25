@@ -111,7 +111,7 @@ export default function Journal() {
       {/* ── Not logged in: show login form ── */}
       {user === null && (
         <div className={styles.loginWrap}>
-          <h1 className={styles.loginTitle}>Travel Journal</h1>
+          <h1 className={styles.loginTitle}>Field Notes</h1>
           <p className={styles.loginSub}>Sign in to continue</p>
           <form onSubmit={handleLogin} className={styles.loginForm}>
             <div className={styles.loginField}>
