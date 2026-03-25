@@ -1,0 +1,15 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  font-family: 'Inter', sans-serif;
+  background-color: #ffffff;
+  color: #2c2c2c;
+}
+
+body {
+  min-height: 100vh;
+}
