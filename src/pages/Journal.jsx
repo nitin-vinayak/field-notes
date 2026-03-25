@@ -192,7 +192,7 @@ export default function Journal() {
                       )}
                       <h2
                         className={styles.title}
-                        onClick={!editMode ? () => navigate(`/entry/${entry.id}`) : undefined}
+                        onClick={!editMode ? () => navigate(`/admin/entry/${entry.id}`) : undefined}
                       >
                         {entry.title}
                       </h2>
