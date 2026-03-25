@@ -35,18 +35,22 @@
 
 .scrollable::-webkit-scrollbar { display: none; }
 
-.backBtn {
-  padding: 6px 12px;
+.backBtn,
+.editBtn,
+.cancelBtn {
+  padding: 0;
   background: transparent;
-  border: 1px solid #000;
-  font-size: 0.78rem;
+  border: none;
+  font-size: 0.9rem;
   cursor: pointer;
-  color: #000;
+  color: #999;
   font-family: inherit;
-  transition: opacity 0.15s;
+  transition: color 0.2s ease;
 }
 
-.backBtn:hover { opacity: 0.5; }
+.backBtn:hover,
+.editBtn:hover,
+.cancelBtn:hover { color: #000; }
 
 .navActions {
   display: flex;
@@ -54,55 +58,32 @@
   align-items: center;
 }
 
-.editBtn {
-  padding: 6px 12px;
-  background: transparent;
-  border: 1px solid #000;
-  font-size: 0.78rem;
-  cursor: pointer;
-  color: #000;
-  font-family: inherit;
-  transition: opacity 0.15s;
-}
-
-.editBtn:hover { opacity: 0.5; }
-
 .deleteBtn {
-  padding: 6px 12px;
+  padding: 0;
   background: transparent;
-  border: 1px solid #ccc;
-  font-size: 0.78rem;
-  cursor: pointer;
-  color: #ccc;
-  font-family: inherit;
-  transition: border-color 0.15s, color 0.15s;
-}
-
-.deleteBtn:hover { border-color: #c00; color: #c00; }
-
-.deleteConfirmBtn {
-  padding: 6px 12px;
-  background: #c00;
   border: none;
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  color: #fff;
-  font-family: inherit;
-}
-
-.cancelBtn {
-  padding: 6px 12px;
-  background: transparent;
-  border: 1px solid #ccc;
-  font-size: 0.78rem;
+  font-size: 0.9rem;
   cursor: pointer;
   color: #999;
   font-family: inherit;
-  transition: opacity 0.15s;
+  transition: color 0.2s ease;
 }
 
-.cancelBtn:hover { opacity: 0.5; }
+.deleteBtn:hover { color: #c00; }
+
+.deleteConfirmBtn {
+  padding: 0;
+  background: transparent;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #c00;
+  font-family: inherit;
+  transition: color 0.2s ease;
+}
+
+.deleteConfirmBtn:hover { color: #900; }
 
 .meta {
   display: flex;
