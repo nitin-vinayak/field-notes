@@ -230,13 +230,12 @@ export default function Admin() {
                 ))}
               </ul>
             )}
-            {locationCoords.lat && <span className={styles.locationConfirmed}>✓ confirmed</span>}
           </div>
         </div>
 
         <div className={styles.field}>
           <label className={styles.label}>Notes</label>
-          <textarea name="notes" value={form.notes} onChange={handleChange} className={styles.textarea} placeholder="Write about your day…" rows={6} />
+          <textarea name="notes" value={form.notes} onChange={handleChange} className={styles.textarea} placeholder="Write about your day…" rows={14} />
         </div>
 
         {/* Media */}

@@ -26,31 +26,20 @@
   z-index: 10;
 }
 
-.navBtn {
-  padding: 6px 12px;
-  background: transparent;
-  border: 1px solid #000;
-  font-size: 0.78rem;
-  cursor: pointer;
-  color: #000;
-  font-family: inherit;
-  transition: opacity 0.15s;
-}
-
-.navBtn:hover { opacity: 0.5; }
-
+.navBtn,
 .logoutBtn {
-  padding: 6px 12px;
+  padding: 0;
   background: transparent;
-  border: 1px solid #000;
-  font-size: 0.78rem;
+  border: none;
+  font-size: 0.9rem;
   cursor: pointer;
-  color: #000;
+  color: #999;
   font-family: inherit;
-  transition: opacity 0.15s;
+  transition: color 0.2s ease;
 }
 
-.logoutBtn:hover { opacity: 0.5; }
+.navBtn:hover,
+.logoutBtn:hover { color: #000; }
 
 .heading {
   font-size: 1.5rem;
@@ -69,6 +58,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
+  align-items: end;
 }
 
 .field {
@@ -103,7 +93,6 @@
 .textarea {
   padding: 8px 0;
   border: none;
-  border-bottom: 1px solid #ccc;
   font-size: 0.9rem;
   color: #000;
   background: transparent;
@@ -154,7 +143,7 @@
   padding: 20px;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
-  min-height: 80px;
+  min-height: 200px;
   display: flex;
   align-items: center;
 }
@@ -248,17 +237,17 @@
 .submitBtn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .cancelBtn {
-  padding: 9px 20px;
+  padding: 0;
   background: transparent;
-  border: 1px solid #000;
-  font-size: 0.82rem;
+  border: none;
+  font-size: 0.9rem;
   cursor: pointer;
-  color: #000;
+  color: #999;
   font-family: inherit;
-  transition: opacity 0.15s;
+  transition: color 0.2s ease;
 }
 
-.cancelBtn:hover { opacity: 0.5; }
+.cancelBtn:hover { color: #000; }
 
 /* RIGHT — map */
 .mapCol {
