@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { db, auth } from '../firebase/config'
 import { uploadImage } from '../utils/uploadImage'
 import { loadGoogleMaps } from '../utils/loadGoogleMaps'
+import { useMapCoords } from '../context/MapCoordsContext'
 import styles from './Admin.module.css'
 
 const EMPTY_FORM = { title: '', date: '', locationName: '', notes: '' }
@@ -12,6 +13,7 @@ const EMPTY_FORM = { title: '', date: '', locationName: '', notes: '' }
 export default function Admin() {
   const { id } = useParams()
   const isEdit = Boolean(id)
+  const { setCoords } = useMapCoords()
 
   const [form, setForm] = useState(EMPTY_FORM)
   const [savedPhotos, setSavedPhotos] = useState([])
@@ -20,13 +22,17 @@ export default function Admin() {
   const [dragging, setDragging] = useState(false)
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(isEdit)
-  const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
   const [locationSuggestions, setLocationSuggestions] = useState([])
   const [locationCoords, setLocationCoords] = useState({ lat: null, lng: null })
   const debounceRef = useRef(null)
   const fileInputRef = useRef()
   const navigate = useNavigate()
+
+  // Reset globe on mount, restore if editing an entry with coords
+  useEffect(() => {
+    setCoords({ lat: null, lng: null })
+  }, [])
 
   useEffect(() => {
     if (!isEdit) return
@@ -41,7 +47,9 @@ export default function Admin() {
           notes: data.notes ?? '',
         })
         setSavedPhotos(data.photos ?? [])
-        setLocationCoords({ lat: data.lat ?? null, lng: data.lng ?? null })
+        const coords = { lat: data.lat ?? null, lng: data.lng ?? null }
+        setLocationCoords(coords)
+        setCoords(coords)
       }
       setLoading(false)
     }
@@ -52,6 +60,7 @@ export default function Admin() {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
     if (e.target.name === 'locationName') {
       setLocationCoords({ lat: null, lng: null })
+      setCoords({ lat: null, lng: null })
       const value = e.target.value
       clearTimeout(debounceRef.current)
       if (value.length < 3) { setLocationSuggestions([]); return }
@@ -69,7 +78,9 @@ export default function Admin() {
     setForm(prev => ({ ...prev, locationName: prediction.text.toString() }))
     const place = prediction.toPlace()
     await place.fetchFields({ fields: ['location'] })
-    setLocationCoords({ lat: place.location.lat(), lng: place.location.lng() })
+    const coords = { lat: place.location.lat(), lng: place.location.lng() }
+    setLocationCoords(coords)
+    setCoords(coords)
   }
 
   useEffect(() => () => clearTimeout(debounceRef.current), [])
@@ -96,7 +107,6 @@ export default function Admin() {
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
-    setSuccess(false)
     setSaving(true)
     try {
       const newPhotoUrls = await Promise.all(photos.map(uploadImage))
@@ -128,7 +138,7 @@ export default function Admin() {
 
   async function handleLogout() {
     await signOut(auth)
-    navigate('/login')
+    navigate('/journal')
   }
 
   const allPreviews = [
@@ -139,105 +149,96 @@ export default function Admin() {
   if (loading) return <div className={styles.loadingPage}>Loading…</div>
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <h1 className={styles.logo}>Travel Journal</h1>
-        <div className={styles.headerActions}>
-          <button onClick={() => navigate('/journal')} className={styles.navBtn}>Journal</button>
-          <button onClick={handleLogout} className={styles.logoutBtn}>Sign out</button>
-        </div>
-      </header>
+    <main className={styles.formCol}>
+      <div className={styles.headerActions}>
+        <button onClick={() => navigate('/journal')} className={styles.navBtn}>Journal</button>
+        <button onClick={handleLogout} className={styles.logoutBtn}>Sign out</button>
+      </div>
 
-      <div className={styles.layout}>
-        {/* LEFT — form */}
-        <div className={styles.left}>
-          <h2 className={styles.heading}>{isEdit ? 'Edit Entry' : 'New Entry'}</h2>
+      <h2 className={styles.heading}>{isEdit ? 'Edit Entry' : 'New Entry'}</h2>
 
-          <form onSubmit={handleSubmit} className={styles.form}>
-            <div className={styles.field}>
-              <label className={styles.label}>Title</label>
-              <input name="title" value={form.title} onChange={handleChange} className={styles.input} placeholder="e.g. First morning in Kyoto" required />
-            </div>
-
-            <div className={styles.row}>
-              <div className={styles.field}>
-                <label className={styles.label}>Date</label>
-                <input type="date" name="date" value={form.date} onChange={handleChange} className={styles.input} required />
-              </div>
-              <div className={styles.field} style={{ position: 'relative' }}>
-                <label className={styles.label}>Location</label>
-                <input
-                  name="locationName"
-                  value={form.locationName}
-                  onChange={handleChange}
-                  onBlur={() => setTimeout(() => setLocationSuggestions([]), 200)}
-                  className={styles.input}
-                  placeholder="e.g. Kyoto, Japan"
-                  autoComplete="off"
-                />
-                {locationSuggestions.length > 0 && (
-                  <ul className={styles.suggestions}>
-                    {locationSuggestions.map((s, i) => (
-                      <li key={i} className={styles.suggestion} onMouseDown={() => selectLocation(s)}>
-                        {s.placePrediction.text.toString()}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {locationCoords.lat && <span className={styles.locationConfirmed}>Location confirmed</span>}
-              </div>
-            </div>
-
-            <div className={styles.field}>
-              <label className={styles.label}>Notes</label>
-              <textarea name="notes" value={form.notes} onChange={handleChange} className={styles.textarea} placeholder="Write about your day…" rows={8} />
-            </div>
-
-            {error && <p className={styles.error}>{error}</p>}
-            {success && <p className={styles.successMsg}>Entry saved!</p>}
-
-            <div className={styles.formActions}>
-              <button type="submit" className={styles.submitBtn} disabled={saving}>
-                {saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Save Entry'}
-              </button>
-              {isEdit && (
-                <button type="button" className={styles.cancelBtn} onClick={() => navigate(`/entry/${id}`)}>Cancel</button>
-              )}
-            </div>
-          </form>
+      <form onSubmit={handleSubmit} className={styles.form}>
+        <div className={styles.field}>
+          <label className={styles.label}>Title</label>
+          <input name="title" value={form.title} onChange={handleChange} className={styles.input} placeholder="e.g. First morning in Kyoto" required />
         </div>
 
-        {/* RIGHT — photo preview */}
-        <div
-          className={`${styles.right} ${dragging ? styles.dragging : ''}`}
-          onDragOver={e => { e.preventDefault(); setDragging(true) }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current.click()}
-        >
+        <div className={styles.row}>
+          <div className={styles.field}>
+            <label className={styles.label}>Date</label>
+            <input type="date" name="date" value={form.date} onChange={handleChange} className={styles.input} required />
+          </div>
+          <div className={styles.field} style={{ position: 'relative' }}>
+            <label className={styles.label}>Location</label>
+            <input
+              name="locationName"
+              value={form.locationName}
+              onChange={handleChange}
+              onBlur={() => setTimeout(() => setLocationSuggestions([]), 200)}
+              className={styles.input}
+              placeholder="e.g. Kyoto, Japan"
+              autoComplete="off"
+            />
+            {locationSuggestions.length > 0 && (
+              <ul className={styles.suggestions}>
+                {locationSuggestions.map((s, i) => (
+                  <li key={i} className={styles.suggestion} onMouseDown={() => selectLocation(s)}>
+                    {s.placePrediction.text.toString()}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {locationCoords.lat && <span className={styles.locationConfirmed}>✓ confirmed</span>}
+          </div>
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.label}>Notes</label>
+          <textarea name="notes" value={form.notes} onChange={handleChange} className={styles.textarea} placeholder="Write about your day…" rows={6} />
+        </div>
+
+        {/* Photos */}
+        <div className={styles.field}>
+          <label className={styles.label}>Photos</label>
           <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleFileInput} className={styles.hiddenInput} />
-
-          {allPreviews.length === 0 ? (
-            <p className={styles.dropText}>Drop photos here or click to add</p>
-          ) : (
-            <div className={styles.previewList}>
-              {allPreviews.map((item, i) => (
-                <div key={i} className={styles.previewItem} onClick={e => e.stopPropagation()}>
-                  <img src={item.src} alt="" className={styles.previewImg} />
-                  <button
-                    type="button"
-                    className={styles.removeBtn}
-                    onClick={() => item.saved ? removeSavedPhoto(savedPhotos.indexOf(item.src)) : removeNewPhoto(item.index)}
-                  >×</button>
-                </div>
-              ))}
-              <div className={styles.addMore} onClick={() => fileInputRef.current.click()}>
-                + Add more
+          <div
+            className={`${styles.dropZone} ${dragging ? styles.dragging : ''}`}
+            onDragOver={e => { e.preventDefault(); setDragging(true) }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={handleDrop}
+            onClick={() => allPreviews.length === 0 && fileInputRef.current.click()}
+          >
+            {allPreviews.length === 0 ? (
+              <span className={styles.dropText}>Drop photos here or click to add</span>
+            ) : (
+              <div className={styles.previewList}>
+                {allPreviews.map((item, i) => (
+                  <div key={i} className={styles.previewItem}>
+                    <img src={item.src} alt="" className={styles.previewImg} />
+                    <button
+                      type="button"
+                      className={styles.removeBtn}
+                      onClick={() => item.saved ? removeSavedPhoto(savedPhotos.indexOf(item.src)) : removeNewPhoto(item.index)}
+                    >×</button>
+                  </div>
+                ))}
+                <div className={styles.addMore} onClick={() => fileInputRef.current.click()}>+ Add more</div>
               </div>
-            </div>
+            )}
+          </div>
+        </div>
+
+        {error && <p className={styles.error}>{error}</p>}
+
+        <div className={styles.formActions}>
+          <button type="submit" className={styles.submitBtn} disabled={saving}>
+            {saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Save Entry'}
+          </button>
+          {isEdit && (
+            <button type="button" className={styles.cancelBtn} onClick={() => navigate(`/entry/${id}`)}>Cancel</button>
           )}
         </div>
-      </div>
-    </div>
+      </form>
+    </main>
   )
 }
