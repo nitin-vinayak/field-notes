@@ -236,6 +236,7 @@
   transition: opacity 0.15s;
 }
 
+.resultCount + .userCard { padding-top: 0; }
 .userCard:last-child { border-bottom: none; }
 .userCard:hover { opacity: 0.6; }
 
