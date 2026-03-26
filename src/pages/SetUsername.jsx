@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { doc, setDoc, getDocs, collection, query, where, Timestamp } from 'firebase/firestore'
+import { signOut } from 'firebase/auth'
 import { db, auth } from '../firebase/config'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
@@ -39,8 +40,19 @@ export default function SetUsername() {
     }
   }
 
+  async function handleBack() {
+    await signOut(auth)
+    navigate('/login')
+  }
+
   return (
     <main className={styles.feedCol}>
+      <div className={styles.headerActions}>
+        <div className={styles.headerLeft}>
+          <button onClick={handleBack} className={styles.navBtn}>Back</button>
+        </div>
+        <div className={styles.headerRight} />
+      </div>
       <div className={styles.loginWrap}>
         <h1 className={styles.loginTitle}>Pick a username</h1>
         <p className={styles.loginSub}>This will be your public journal URL.</p>
