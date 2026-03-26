@@ -67,20 +67,24 @@ export default function Entry() {
     <main className={styles.entryCol}>
 
       <div className={styles.fixedActions}>
-        <button onClick={() => navigate(`/${username}`)} className={styles.backBtn}>Back</button>
-        {isOwner && (
-          <>
-            <button onClick={() => navigate(`/admin/edit/${id}`)} className={styles.editBtn}>Edit</button>
-            {confirmDelete ? (
-              <>
-                <button onClick={handleDelete} className={styles.deleteConfirmBtn}>Delete</button>
-                <button onClick={() => setConfirmDelete(false)} className={styles.cancelBtn}>Cancel</button>
-              </>
-            ) : (
-              <button onClick={() => setConfirmDelete(true)} className={styles.deleteBtn}>Delete</button>
-            )}
-          </>
-        )}
+        <div className={styles.headerLeft}>
+          <button onClick={() => navigate(`/${username}`)} className={styles.backBtn}>Back</button>
+        </div>
+        <div className={styles.headerRight}>
+          {isOwner && (
+            <>
+              <button onClick={() => navigate(`/admin/edit/${id}`)} className={styles.editBtn}>Edit</button>
+              {confirmDelete ? (
+                <>
+                  <button onClick={handleDelete} className={styles.deleteConfirmBtn}>Delete</button>
+                  <button onClick={() => setConfirmDelete(false)} className={styles.cancelBtn}>Cancel</button>
+                </>
+              ) : (
+                <button onClick={() => setConfirmDelete(true)} className={styles.deleteBtn}>Delete</button>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       <div className={styles.scrollable}>

@@ -18,10 +18,18 @@
 .fixedActions {
   display: flex;
   flex-shrink: 0;
-  gap: 12px;
   align-items: center;
+  justify-content: space-between;
   background: #fff;
-  padding: 60px 96px 60px 96px;
+  padding: 60px 96px;
+}
+
+.headerLeft,
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 33px;
 }
 
 .scrollable {

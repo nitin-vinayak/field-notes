@@ -199,10 +199,15 @@ export default function Admin() {
   return (
     <main className={styles.formCol}>
       <div className={styles.headerActions}>
-        <button onClick={() => navigate(`/${username}`)} className={styles.navBtn}>Journal</button>
-        <button onClick={handleLogout} className={styles.logoutBtn}>Sign out</button>
+        <div className={styles.headerLeft}>
+          <button onClick={() => navigate(`/${username}`)} className={styles.navBtn}>Back</button>
+        </div>
+        <div className={styles.headerRight}>
+          <button onClick={handleLogout} className={styles.logoutBtn}>Logout</button>
+        </div>
       </div>
 
+      <div className={styles.scrollable}>
       <h2 className={styles.heading}>{isEdit ? 'Edit Entry' : 'New Entry'}</h2>
 
       <form onSubmit={handleSubmit} className={styles.form}>
@@ -298,6 +303,7 @@ export default function Admin() {
           )}
         </div>
       </form>
+      </div>
     </main>
   )
 }
