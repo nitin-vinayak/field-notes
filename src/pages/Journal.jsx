@@ -18,6 +18,11 @@ export default function Journal() {
   const [editMode, setEditMode] = useState(false)
   const [selected, setSelected] = useState(new Set())
   const [deleting, setDeleting] = useState(false)
+  const [search, setSearch] = useState('')
+  const [userResults, setUserResults] = useState([])
+  const [userSearching, setUserSearching] = useState(false)
+  const userSearchTimer = useRef(null)
+  const searchRef = useRef(null)
   const hoverTimer = useRef(null)
   const navigate = useNavigate()
 
@@ -29,6 +34,7 @@ export default function Journal() {
     setNotFound(false)
     setProfileUid(null)
     setEntries([])
+    setSearch('')
     async function fetchEntries() {
       const userSnap = await getDocs(query(collection(db, 'users'), where('username', '==', profileUsername)))
       if (userSnap.empty) { setNotFound(true); setLoading(false); return }
@@ -41,6 +47,41 @@ export default function Journal() {
     }
     fetchEntries()
   }, [profileUsername])
+
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === 'Tab') {
+        e.preventDefault()
+        if (document.activeElement === searchRef.current) {
+          searchRef.current?.blur()
+        } else {
+          searchRef.current?.focus()
+        }
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  useEffect(() => {
+    if (!search.startsWith('@')) { setUserResults([]); return }
+    const prefix = search.slice(1).toLowerCase().trim()
+    clearTimeout(userSearchTimer.current)
+    if (!prefix) { setUserResults([]); setUserSearching(false); return }
+    setUserSearching(true)
+    userSearchTimer.current = setTimeout(async () => {
+      const snap = await getDocs(query(
+        collection(db, 'users'),
+        where('username', '>=', prefix),
+        where('username', '<=', prefix + '\uf8ff'),
+      ))
+      setUserResults(snap.docs
+        .filter(d => d.id !== user?.uid)
+        .map(d => ({ uid: d.id, username: d.data().username }))
+      )
+      setUserSearching(false)
+    }, 300)
+  }, [search])
 
   function formatDate(timestamp) {
     return timestamp.toDate().toLocaleDateString('en-US', {
@@ -93,35 +134,89 @@ export default function Journal() {
           {isOwner ? (
             !editMode ? (
               <>
-                <button onClick={() => navigate('/admin')} className={styles.navBtn}>New Entry</button>
-                <button onClick={toggleEditMode} className={styles.editModeBtn}>Edit</button>
-                <button onClick={handleLogout} className={styles.logoutBtn}>Logout</button>
+                <div className={styles.headerLeft}>
+                  <button onClick={() => navigate('/admin')} className={styles.navBtn}>New Entry</button>
+                  <input
+                    ref={searchRef}
+                    className={styles.searchInput}
+                    placeholder="Search"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                  />
+                </div>
+                <div className={styles.headerRight}>
+                  <button onClick={toggleEditMode} className={styles.editModeBtn}>Edit</button>
+                  <button onClick={handleLogout} className={styles.logoutBtn}>Logout</button>
+                </div>
               </>
             ) : (
               <>
-                {selected.size > 0 && (
-                  <button onClick={deleteSelected} className={styles.deleteBtn} disabled={deleting}>
-                    {deleting ? 'Deleting…' : `Delete ${selected.size}`}
-                  </button>
-                )}
-                <button onClick={toggleEditMode} className={styles.cancelBtn}>Cancel</button>
+                <div className={styles.headerLeft} />
+                <div className={styles.headerRight}>
+                  {selected.size > 0 && (
+                    <button onClick={deleteSelected} className={styles.deleteBtn} disabled={deleting}>
+                      {deleting ? 'Deleting…' : `Delete ${selected.size}`}
+                    </button>
+                  )}
+                  <button onClick={toggleEditMode} className={styles.cancelBtn}>Cancel</button>
+                </div>
               </>
             )
           ) : (
             <>
-              <span className={styles.logo}>{profileUsername}</span>
-              {user
-                ? (myUsername && <button onClick={() => navigate(`/${myUsername}`)} className={styles.navBtn}>My Journal</button>)
-                : <button onClick={() => navigate('/login')} className={styles.navBtn}>Login</button>
-              }
+              <div className={styles.headerLeft}>
+                <span className={styles.logo}>{profileUsername}</span>
+                <input
+                  ref={searchRef}
+                  className={styles.searchInput}
+                  placeholder="Search"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                />
+              </div>
+              <div className={styles.headerRight}>
+                {user
+                  ? (myUsername && <button onClick={() => navigate(`/${myUsername}`)} className={styles.navBtn}>My Journal</button>)
+                  : <button onClick={() => navigate('/login')} className={styles.navBtn}>Login</button>
+                }
+              </div>
             </>
           )}
         </div>
 
         <div className={styles.scrollable}>
-          {entries.length > 0 && (
+          {search.startsWith('@') ? (
             <div className={styles.feed}>
-              {entries.map(entry => (
+              {!userSearching && userResults.length > 0 && (
+                <span className={styles.resultCount}>
+                  {userResults.length} {userResults.length === 1 ? 'user' : 'users'}
+                </span>
+              )}
+              {userResults.map(u => (
+                <div key={u.uid} className={styles.userCard} onClick={() => navigate(`/${u.username}`)}>
+                  <span className={styles.userCardName}>@{u.username}</span>
+                </div>
+              ))}
+              {!userSearching && search.length > 1 && userResults.length === 0 && (
+                <span className={styles.noResults}>No users found</span>
+              )}
+            </div>
+          ) : entries.length > 0 && (() => {
+            const filtered = entries.filter(entry => {
+              if (!search.trim()) return true
+              const q = search.toLowerCase()
+              return entry.title.toLowerCase().includes(q) ||
+                (entry.locationName ?? '').toLowerCase().includes(q) ||
+                formatDate(entry.date).toLowerCase().includes(q)
+            })
+            return (
+            <div className={styles.feed}>
+              {search.trim() && (
+                <span className={styles.resultCount}>
+                  {filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}
+                </span>
+              )}
+              {filtered.map(entry => (
                 <article
                   key={entry.id}
                   className={`${styles.entry} ${editMode ? styles.editMode : ''} ${editMode && selected.has(entry.id) ? styles.selected : ''}`}
@@ -157,8 +252,10 @@ export default function Journal() {
                 </article>
               ))}
             </div>
-          )}
+            )
+          })()}
         </div>
+
       </div>
     </main>
   )

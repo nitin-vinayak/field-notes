@@ -22,12 +22,46 @@
 .headerActions {
   display: flex;
   flex-shrink: 0;
-  gap: 12px;
   align-items: center;
+  justify-content: space-between;
   background: #fff;
   padding: 60px 96px;
   animation: fadeIn 0.6s ease both;
+  position: relative;
+  z-index: 10;
 }
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.searchInput {
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  outline: none;
+  font-size: 0.9rem;
+  color: #000;
+  background: transparent;
+  padding: 6px 12px;
+  width: 180px;
+  font-family: inherit;
+  transition: border-color 0.2s ease, width 0.3s ease;
+}
+
+.searchInput::placeholder { color: #ccc; }
+.searchInput:focus {
+  border-color: #000;
+  width: 260px;
+}
+
 
 .navBtn,
 .logoutBtn,
@@ -183,6 +217,35 @@
 }
 
 .title:hover { opacity: 1; }
+
+.resultCount {
+  display: block;
+  font-size: 0.75rem;
+  color: #bbb;
+  margin-bottom: 24px;
+}
+
+.userCard {
+  padding: 20px 0;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+  transition: opacity 0.15s;
+}
+
+.userCard:last-child { border-bottom: none; }
+.userCard:hover { opacity: 0.6; }
+
+.userCardName {
+  font-size: 1.4rem;
+  font-weight: 500;
+  color: #000;
+}
+
+.noResults {
+  font-size: 0.85rem;
+  color: #999;
+  padding: 20px 0;
+}
 
 /* Login form (renders in feedCol) */
 @keyframes fadeIn {
