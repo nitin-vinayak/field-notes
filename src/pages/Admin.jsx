@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { collection, addDoc, updateDoc, doc, getDoc, Timestamp } from 'firebase/firestore'
+import { collection, addDoc, updateDoc, deleteDoc, doc, getDoc, getDocs, query, where, Timestamp } from 'firebase/firestore'
 import { signOut } from 'firebase/auth'
 import { useNavigate, useParams } from 'react-router-dom'
 import { db, auth } from '../firebase/config'
@@ -25,6 +25,8 @@ export default function Admin() {
   const [mediaItems, setMediaItems] = useState([])
   const [dragging, setDragging] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [savingDraft, setSavingDraft] = useState(false)
+  const [isDraft, setIsDraft] = useState(false)
   const [loading, setLoading] = useState(isEdit)
   const [error, setError] = useState('')
   const [locationSuggestions, setLocationSuggestions] = useState([])
@@ -61,6 +63,7 @@ export default function Admin() {
               ...(data.videos ?? []).map(url => ({ src: url, type: 'video', saved: true })),
             ]
         setMediaItems(saved)
+        setIsDraft(data.draft === true)
         const coords = { lat: data.lat ?? null, lng: data.lng ?? null }
         setLocationCoords(coords)
         setCoords(coords)
@@ -172,6 +175,7 @@ export default function Admin() {
         lng: locationCoords.lng,
         notes: form.notes,
         media,
+        draft: false,
       }
       if (isEdit) {
         await updateDoc(doc(db, 'entries', id), entryData)
@@ -189,6 +193,54 @@ export default function Admin() {
     }
   }
 
+  async function handleSaveDraft() {
+    setError('')
+    setSavingDraft(true)
+    try {
+      const media = await Promise.all(
+        mediaItems.map(async item => {
+          if (item.saved) return { url: item.src, type: item.type }
+          const url = item.type === 'image'
+            ? await uploadImage(item.file)
+            : await uploadVideo(item.file)
+          return { url, type: item.type }
+        })
+      )
+      const entryData = {
+        title: form.title,
+        date: form.date ? Timestamp.fromDate(new Date(form.date)) : Timestamp.now(),
+        locationName: form.locationName,
+        lat: locationCoords.lat,
+        lng: locationCoords.lng,
+        notes: form.notes,
+        media,
+        draft: true,
+      }
+      if (isEdit) {
+        await updateDoc(doc(db, 'entries', id), entryData)
+      } else {
+        await addDoc(collection(db, 'entries'), { ...entryData, createdAt: Timestamp.now(), uid: auth.currentUser.uid })
+        mediaItems.filter(i => !i.saved).forEach(i => URL.revokeObjectURL(i.src))
+      }
+      navigate(`/${username}`)
+    } catch (err) {
+      console.error(err)
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setSavingDraft(false)
+    }
+  }
+
+  async function handleDeleteDraft() {
+    await deleteDoc(doc(db, 'entries', id))
+    const remaining = await getDocs(query(
+      collection(db, 'entries'),
+      where('uid', '==', auth.currentUser.uid),
+      where('draft', '==', true)
+    ))
+    navigate(`/${username}`, remaining.size > 0 ? { state: { drafts: true } } : undefined)
+  }
+
   async function handleLogout() {
     await signOut(auth)
     navigate('/login')
@@ -200,15 +252,18 @@ export default function Admin() {
     <main className={styles.formCol}>
       <div className={styles.headerActions}>
         <div className={styles.headerLeft}>
-          <button onClick={() => navigate(`/${username}`)} className={styles.navBtn}>Back</button>
+          <button onClick={() => navigate(`/${username}`, isDraft ? { state: { drafts: true } } : undefined)} className={styles.navBtn}>Back</button>
         </div>
         <div className={styles.headerRight}>
-          <button onClick={handleLogout} className={styles.logoutBtn}>Logout</button>
+          {isEdit && isDraft
+            ? <button onClick={handleDeleteDraft} className={styles.logoutBtn}>Delete</button>
+            : <button onClick={handleLogout} className={styles.logoutBtn}>Logout</button>
+          }
         </div>
       </div>
 
       <div className={styles.scrollable}>
-      <h2 className={styles.heading}>{isEdit ? 'Edit Entry' : 'New Entry'}</h2>
+      <h2 className={styles.heading}>{isEdit ? (isDraft ? 'Edit Draft' : 'Edit Entry') : 'New Entry'}</h2>
 
       <form onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.field}>
@@ -295,10 +350,13 @@ export default function Admin() {
         {error && <p className={styles.error}>{error}</p>}
 
         <div className={styles.formActions}>
-          <button type="submit" className={styles.submitBtn} disabled={saving}>
-            {saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Save Entry'}
+          <button type="submit" className={styles.submitBtn} disabled={saving || savingDraft}>
+            {saving ? 'Saving…' : isEdit && !isDraft ? 'Save Changes' : 'Publish'}
           </button>
-          {isEdit && (
+          <button type="button" className={styles.draftBtn} disabled={saving || savingDraft} onClick={handleSaveDraft}>
+            {savingDraft ? 'Saving…' : 'Save Draft'}
+          </button>
+          {isEdit && !isDraft && (
             <button type="button" className={styles.cancelBtn} onClick={() => navigate(`/${username}/entry/${id}`)}>Cancel</button>
           )}
         </div>

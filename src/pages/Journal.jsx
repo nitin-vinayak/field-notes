@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { collection, getDocs, orderBy, query, where, deleteDoc, doc } from 'firebase/firestore'
 import { signOut } from 'firebase/auth'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { db, auth } from '../firebase/config'
 import { useAuth } from '../context/AuthContext'
 import { useMapCoords } from '../context/MapCoordsContext'
@@ -11,7 +11,10 @@ export default function Journal() {
   const { username: profileUsername } = useParams()
   const { user, username: myUsername } = useAuth()
   const { setCoords } = useMapCoords()
+  const location = useLocation()
   const [entries, setEntries] = useState([])
+  const [drafts, setDrafts] = useState([])
+  const [showDrafts, setShowDrafts] = useState(!!location.state?.drafts)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [profileUid, setProfileUid] = useState(null)
@@ -34,6 +37,8 @@ export default function Journal() {
     setNotFound(false)
     setProfileUid(null)
     setEntries([])
+    setDrafts([])
+    setShowDrafts(!!location.state?.drafts)
     setSearch('')
     async function fetchEntries() {
       const userSnap = await getDocs(query(collection(db, 'users'), where('username', '==', profileUsername)))
@@ -42,7 +47,9 @@ export default function Journal() {
       setProfileUid(uid)
       const q = query(collection(db, 'entries'), where('uid', '==', uid), orderBy('date', 'desc'))
       const snapshot = await getDocs(q)
-      setEntries(snapshot.docs.map(d => ({ id: d.id, ...d.data() })))
+      const all = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
+      setEntries(all.filter(e => !e.draft))
+      setDrafts(all.filter(e => e.draft))
       setLoading(false)
     }
     fetchEntries()
@@ -107,6 +114,7 @@ export default function Journal() {
     setDeleting(true)
     await Promise.all([...selected].map(id => deleteDoc(doc(db, 'entries', id))))
     setEntries(prev => prev.filter(e => !selected.has(e.id)))
+    setDrafts(prev => prev.filter(e => !selected.has(e.id)))
     setSelected(new Set())
     setEditMode(false)
     setDeleting(false)
@@ -134,7 +142,15 @@ export default function Journal() {
           {isOwner ? (
             <>
               <div className={styles.headerLeft}>
-                {!editMode && <button onClick={() => navigate('/admin')} className={styles.navBtn}>New Entry</button>}
+                {!editMode && (showDrafts
+                  ? <button onClick={() => { setShowDrafts(false); setSearch('') }} className={styles.navBtn}>Back</button>
+                  : <button onClick={() => navigate('/admin')} className={styles.navBtn}>New Entry</button>
+                )}
+                {!editMode && drafts.length > 0 && !showDrafts && (
+                  <button onClick={() => { setShowDrafts(true); setSearch('') }} className={styles.navBtn}>
+                    Drafts ({drafts.length})
+                  </button>
+                )}
                 <input
                   ref={searchRef}
                   className={styles.searchInput}
@@ -184,7 +200,49 @@ export default function Journal() {
         </div>
 
         <div className={styles.scrollable}>
-          {search.startsWith('@') ? (
+          {showDrafts && !search.startsWith('@') ? (
+            <div className={styles.feed}>
+              {drafts.length === 0 ? (
+                <span className={styles.noResults}>No drafts</span>
+              ) : drafts.filter(entry => {
+                if (!search.trim()) return true
+                const q = search.toLowerCase()
+                return entry.title.toLowerCase().includes(q) ||
+                  (entry.locationName ?? '').toLowerCase().includes(q) ||
+                  formatDate(entry.date).toLowerCase().includes(q)
+              }).map(entry => (
+                <article
+                  key={entry.id}
+                  className={`${styles.entry} ${styles.draftEntry} ${editMode ? styles.editMode : ''} ${editMode && selected.has(entry.id) ? styles.selected : ''}`}
+                  onClick={editMode ? () => toggleSelect(entry.id) : () => navigate(`/admin/edit/${entry.id}`)}
+                >
+                  <div className={styles.timeline}>
+                    <div className={styles.node} />
+                  </div>
+                  <div className={styles.entryContent}>
+                    {entry.locationName && <span className={styles.location}>{entry.locationName}</span>}
+                    <h2
+                      className={styles.title}
+                      onMouseEnter={() => {
+                        if (entry.lat == null || entry.lng == null) return
+                        clearTimeout(hoverTimer.current)
+                        hoverTimer.current = setTimeout(() => {
+                          setCoords({ lat: entry.lat, lng: entry.lng })
+                        }, 400)
+                      }}
+                      onMouseLeave={() => {
+                        clearTimeout(hoverTimer.current)
+                        hoverTimer.current = setTimeout(() => {
+                          setCoords({ lat: null, lng: null })
+                        }, 150)
+                      }}
+                    >{entry.title || <em className={styles.untitled}>Untitled</em>}</h2>
+                    <span className={styles.date}>{entry.date ? formatDate(entry.date) : '—'}</span>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : search.startsWith('@') ? (
             <div className={styles.feed}>
               <span className={styles.resultCount} style={{ visibility: !userSearching && userResults.length > 0 ? 'visible' : 'hidden' }}>
                 {userResults.length} {userResults.length === 1 ? 'user' : 'users'}

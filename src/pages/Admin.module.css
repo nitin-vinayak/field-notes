@@ -253,6 +253,20 @@
 .submitBtn:hover:not(:disabled) { opacity: 0.7; }
 .submitBtn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+.draftBtn {
+  padding: 0;
+  background: transparent;
+  border: none;
+  font-size: 0.9rem;
+  cursor: pointer;
+  color: #999;
+  font-family: inherit;
+  transition: color 0.2s ease;
+}
+
+.draftBtn:hover:not(:disabled) { color: #000; }
+.draftBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
 .cancelBtn {
   padding: 0;
   background: transparent;

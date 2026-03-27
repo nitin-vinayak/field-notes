@@ -81,6 +81,19 @@
   color: #000;
 }
 
+.navBtnActive {
+  color: #000;
+}
+
+.draftEntry {
+  cursor: pointer;
+}
+
+.untitled {
+  color: #bbb;
+  font-style: italic;
+}
+
 .deleteBtn {
   padding: 0;
   background: transparent;
