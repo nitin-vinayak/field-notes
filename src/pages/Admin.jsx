@@ -11,7 +11,7 @@ import { useAuth } from '../context/AuthContext'
 import RichTextEditor from '../components/RichTextEditor'
 import styles from './Admin.module.css'
 
-const EMPTY_FORM = { title: '', date: '', locationName: '', notes: '' }
+const EMPTY_FORM = { title: '', date: '', locationName: '', notes: '', collection: '' }
 
 // Each mediaItem: { src, type: 'image'|'video', saved: bool, file?: File }
 
@@ -32,6 +32,8 @@ export default function Admin() {
   const [error, setError] = useState('')
   const [locationSuggestions, setLocationSuggestions] = useState([])
   const [locationCoords, setLocationCoords] = useState({ lat: null, lng: null })
+  const [existingCollections, setExistingCollections] = useState([])
+  const [collectionSuggestions, setCollectionSuggestions] = useState([])
   const debounceRef = useRef(null)
   const fileInputRef = useRef()
   const dragIndexRef = useRef(null)
@@ -42,6 +44,13 @@ export default function Admin() {
 
   useEffect(() => {
     if (!isEdit) setCoords({ lat: null, lng: null })
+    async function fetchCollections() {
+      if (!auth.currentUser) return
+      const snap = await getDocs(query(collection(db, 'entries'), where('uid', '==', auth.currentUser.uid)))
+      const cols = [...new Set(snap.docs.map(d => d.data().collection).filter(Boolean))]
+      setExistingCollections(cols)
+    }
+    fetchCollections()
   }, [])
 
   useEffect(() => {
@@ -55,6 +64,7 @@ export default function Admin() {
           date: data.date.toDate().toISOString().split('T')[0],
           locationName: data.locationName ?? '',
           notes: data.notes ?? '',
+          collection: data.collection ?? '',
         })
         // Support both new media array and legacy photos/videos arrays
         const saved = data.media
@@ -76,6 +86,10 @@ export default function Admin() {
 
   function handleChange(e) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
+    if (e.target.name === 'collection') {
+      const val = e.target.value.trim().toLowerCase()
+      setCollectionSuggestions(val ? existingCollections.filter(c => c.toLowerCase().includes(val) && c.toLowerCase() !== val) : [])
+    }
     if (e.target.name === 'locationName') {
       setLocationCoords({ lat: null, lng: null })
       setCoords({ lat: null, lng: null })
@@ -175,6 +189,7 @@ export default function Admin() {
         lat: locationCoords.lat,
         lng: locationCoords.lng,
         notes: form.notes,
+        collection: form.collection.trim() || null,
         media,
         draft: false,
       }
@@ -214,6 +229,7 @@ export default function Admin() {
         lat: locationCoords.lat,
         lng: locationCoords.lng,
         notes: form.notes,
+        collection: form.collection.trim() || null,
         media,
         draft: true,
       }
@@ -306,6 +322,28 @@ export default function Admin() {
             initialContent={form.notes}
             onChange={v => setForm(prev => ({ ...prev, notes: v }))}
           />
+        </div>
+
+        <div className={styles.field} style={{ position: 'relative' }}>
+          <label className={styles.label}>Collection <span className={styles.optional}>(optional)</span></label>
+          <input
+            name="collection"
+            value={form.collection}
+            onChange={handleChange}
+            onBlur={() => setTimeout(() => setCollectionSuggestions([]), 200)}
+            className={styles.input}
+            placeholder="e.g. Japan 2025, Weekend Hikes…"
+            autoComplete="off"
+          />
+          {collectionSuggestions.length > 0 && (
+            <ul className={styles.suggestions}>
+              {collectionSuggestions.map((c, i) => (
+                <li key={i} className={styles.suggestion} onMouseDown={() => { setForm(prev => ({ ...prev, collection: c })); setCollectionSuggestions([]) }}>
+                  {c}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         {/* Media */}

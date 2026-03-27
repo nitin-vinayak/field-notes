@@ -15,6 +15,8 @@ export default function Journal() {
   const [entries, setEntries] = useState([])
   const [drafts, setDrafts] = useState([])
   const [showDrafts, setShowDrafts] = useState(!!location.state?.drafts)
+  const [showCollections, setShowCollections] = useState(false)
+  const [activeCollection, setActiveCollection] = useState(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [profileUid, setProfileUid] = useState(null)
@@ -39,6 +41,8 @@ export default function Journal() {
     setEntries([])
     setDrafts([])
     setShowDrafts(!!location.state?.drafts)
+    setShowCollections(false)
+    setActiveCollection(null)
     setSearch('')
     async function fetchEntries() {
       const userSnap = await getDocs(query(collection(db, 'users'), where('username', '==', profileUsername)))
@@ -142,11 +146,11 @@ export default function Journal() {
           {isOwner ? (
             <>
               <div className={styles.headerLeft}>
-                {!editMode && (showDrafts
-                  ? <button onClick={() => { setShowDrafts(false); setSearch('') }} className={styles.navBtn}>Back</button>
+                {!editMode && (showDrafts || showCollections
+                  ? <button onClick={() => { setShowDrafts(false); setShowCollections(false); setSearch('') }} className={styles.navBtn}>Back</button>
                   : <button onClick={() => navigate('/admin')} className={styles.navBtn}>New Entry</button>
                 )}
-                {!editMode && drafts.length > 0 && !showDrafts && (
+                {!editMode && drafts.length > 0 && !showDrafts && !showCollections && (
                   <button onClick={() => { setShowDrafts(true); setSearch('') }} className={styles.navBtn}>
                     Drafts ({drafts.length})
                   </button>
@@ -171,6 +175,9 @@ export default function Journal() {
                   </>
                 ) : (
                   <>
+                    {!showDrafts && !showCollections && (
+                      <button onClick={() => { setShowCollections(true); setActiveCollection(null); setSearch('') }} className={styles.navBtn}>Collections</button>
+                    )}
                     <button onClick={toggleEditMode} className={styles.editModeBtn}>Edit</button>
                     <button onClick={handleLogout} className={styles.logoutBtn}>Logout</button>
                   </>
@@ -209,7 +216,8 @@ export default function Journal() {
                 const q = search.toLowerCase()
                 return entry.title.toLowerCase().includes(q) ||
                   (entry.locationName ?? '').toLowerCase().includes(q) ||
-                  formatDate(entry.date).toLowerCase().includes(q)
+                  formatDate(entry.date).toLowerCase().includes(q) ||
+                  (entry.collection ?? '').toLowerCase().includes(q)
               }).map(entry => (
                 <article
                   key={entry.id}
@@ -237,7 +245,10 @@ export default function Journal() {
                         }, 150)
                       }}
                     >{entry.title || <em className={styles.untitled}>Untitled</em>}</h2>
-                    <span className={styles.date}>{entry.date ? formatDate(entry.date) : '—'}</span>
+                    <span className={styles.date}>
+                      {entry.date ? formatDate(entry.date) : '—'}
+                      {entry.collection && <span className={styles.entryCollection}> · {entry.collection}</span>}
+                    </span>
                   </div>
                 </article>
               ))}
@@ -256,17 +267,41 @@ export default function Journal() {
                 <span className={styles.noResults}>No users found</span>
               )}
             </div>
+          ) : showCollections ? (
+            <div className={styles.feed}>
+              {(() => {
+                const colMap = {}
+                entries.forEach(e => { if (e.collection) colMap[e.collection] = (colMap[e.collection] || 0) + 1 })
+                const cols = Object.entries(colMap).filter(([name]) => !search.trim() || name.toLowerCase().includes(search.toLowerCase()))
+                return cols.length === 0
+                  ? <span className={styles.noResults}>No collections yet</span>
+                  : cols.map(([name, count]) => (
+                    <div key={name} className={styles.userCard} onClick={() => { setActiveCollection(name); setShowCollections(false); setSearch('') }}>
+                      <span className={styles.userCardName}>{name}</span>
+                      <span className={styles.collectionCount}>{count} {count === 1 ? 'entry' : 'entries'}</span>
+                    </div>
+                  ))
+              })()}
+            </div>
           ) : entries.length > 0 && (() => {
             const filtered = entries.filter(entry => {
+              if (activeCollection && entry.collection !== activeCollection) return false
               if (!search.trim()) return true
               const q = search.toLowerCase()
               return entry.title.toLowerCase().includes(q) ||
                 (entry.locationName ?? '').toLowerCase().includes(q) ||
-                formatDate(entry.date).toLowerCase().includes(q)
+                formatDate(entry.date).toLowerCase().includes(q) ||
+                (entry.collection ?? '').toLowerCase().includes(q)
             })
             return (
             <div className={styles.feed}>
-              <span className={styles.resultCount} style={{ visibility: search.trim() ? 'visible' : 'hidden' }}>
+              {activeCollection && (
+                <div className={styles.activeCollection}>
+                  {activeCollection}
+                  <button className={styles.clearCollection} onClick={() => setActiveCollection(null)}>×</button>
+                </div>
+              )}
+              <span className={styles.resultCount} style={{ visibility: search.trim() || activeCollection ? 'visible' : 'hidden' }}>
                 {filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}
               </span>
               {filtered.map(entry => (
@@ -300,7 +335,10 @@ export default function Journal() {
                     >
                       {entry.title}
                     </h2>
-                    <span className={styles.date}>{formatDate(entry.date)}</span>
+                    <span className={styles.date}>
+                      {formatDate(entry.date)}
+                      {entry.collection && <span className={styles.entryCollection}> · {entry.collection}</span>}
+                    </span>
                   </div>
                 </article>
               ))}

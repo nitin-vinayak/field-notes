@@ -265,6 +265,43 @@
   padding: 1.25rem 0;
 }
 
+.collectionCount {
+  font-size: 0.78rem;
+  color: #bbb;
+  margin-top: 0.2rem;
+  display: block;
+}
+
+.activeCollection {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #000;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 1.25rem;
+}
+
+.clearCollection {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #999;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0;
+  transition: color 0.15s;
+}
+
+.clearCollection:hover { color: #000; }
+
+.entryCollection {
+  color: #bbb;
+  font-weight: 400;
+}
+
 /* Login form (renders in feedCol) */
 @keyframes fadeIn {
   from { opacity: 0; }

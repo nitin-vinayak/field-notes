@@ -97,6 +97,14 @@
   color: #999;
 }
 
+.optional {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #ccc;
+  font-size: 0.7rem;
+}
+
 .input {
   padding: 0.5rem 0;
   border: none;
