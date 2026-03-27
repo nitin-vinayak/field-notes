@@ -358,7 +358,7 @@ export default function Admin() {
             {saving ? 'Saving…' : isEdit && !isDraft ? 'Save Changes' : 'Publish'}
           </button>
           <button type="button" className={styles.draftBtn} disabled={saving || savingDraft} onClick={handleSaveDraft}>
-            {savingDraft ? 'Saving…' : 'Save Draft'}
+            {savingDraft ? 'Saving…' : isEdit && !isDraft ? 'Move to Drafts' : 'Save Draft'}
           </button>
           {isEdit && !isDraft && (
             <button type="button" className={styles.cancelBtn} onClick={() => navigate(`/${username}/entry/${id}`)}>Cancel</button>
