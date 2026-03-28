@@ -208,7 +208,8 @@ export default function Journal() {
     setSavingCollection(false)
     if (remaining.length === 0) {
       setCollectionView(null)
-      setShowCollections(true)
+      const hasOtherCollections = entries.some(e => e.collection && e.collection !== collectionView && !collectionSelected.has(e.id))
+      setShowCollections(hasOtherCollections)
     }
   }
 
@@ -475,7 +476,7 @@ export default function Journal() {
                 (entry.collection ?? '').toLowerCase().includes(q)
             })
             return (
-            <div className={styles.feed}>
+            <div key="feed" className={styles.feed}>
               {activeCollection && (
                 <div className={styles.activeCollection}>
                   {activeCollection}
