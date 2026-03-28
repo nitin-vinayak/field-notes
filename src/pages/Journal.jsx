@@ -315,6 +315,9 @@ export default function Journal() {
           ) : (
             <>
               <div className={styles.headerLeft}>
+                {(showCollections || collectionView) && (
+                  <button onClick={() => { collectionView ? closeCollectionView() : setShowCollections(false); setSearch('') }} className={styles.navBtn}>Back</button>
+                )}
                 <span className={styles.logo}>{profileUsername}</span>
                 <input
                   ref={searchRef}
@@ -325,6 +328,9 @@ export default function Journal() {
                 />
               </div>
               <div className={styles.headerRight}>
+                {!showCollections && !collectionView && (
+                  <button onClick={() => { setShowCollections(true); setSearch('') }} className={styles.navBtn}>Collections</button>
+                )}
                 {user
                   ? (myUsername && <button onClick={() => navigate(`/${myUsername}`)} className={styles.navBtn}>My Journal</button>)
                   : <button onClick={() => navigate('/login')} className={styles.navBtn}>Login</button>
@@ -346,7 +352,7 @@ export default function Journal() {
                     onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); if (e.key === 'Escape') { setCollectionNameInput(collectionView); setCollectionNameEditing(false) } }}
                     autoFocus
                   />
-                : <h2 className={`${styles.collectionTitle} ${styles.collectionTitleClickable}`} onClick={() => !collectionEditMode && setCollectionNameEditing(true)}>{collectionView}</h2>
+                : <h2 className={`${styles.collectionTitle} ${isOwner ? styles.collectionTitleClickable : ''}`} onClick={() => isOwner && !collectionEditMode && setCollectionNameEditing(true)}>{collectionView}</h2>
               }
 
               {entries.filter(e => {
