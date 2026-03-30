@@ -236,7 +236,11 @@ export default function Admin() {
       }
       if (isEdit) {
         await updateDoc(doc(db, 'entries', id), entryData)
-        navigate(`/${username}`, isDraft ? undefined : fromCollection ? { state: { collection: fromCollection } } : undefined)
+        if (isDraft) {
+          navigate(`/${username}`)
+        } else {
+          navigate(`/${username}/entry/${id}`, fromCollection ? { state: { collection: fromCollection } } : undefined)
+        }
       } else {
         await addDoc(collection(db, 'entries'), { ...entryData, createdAt: Timestamp.now(), uid: auth.currentUser.uid })
         mediaItems.filter(i => !i.saved).forEach(i => URL.revokeObjectURL(i.src))

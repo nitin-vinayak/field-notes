@@ -100,6 +100,7 @@ export default function Entry() {
         <div className={styles.meta}>
           <span className={styles.date}>{formatDate(entry.date)}</span>
           {entry.locationName && <span className={styles.location}>{entry.locationName}</span>}
+          {entry.private && (isOwner || isTagged) && <span className={styles.privateLabel}>Private</span>}
         </div>
 
         <h1 className={styles.title}>{entry.title}</h1>
