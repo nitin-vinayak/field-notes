@@ -4,7 +4,7 @@ import styles from './CalendarModal.module.css'
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December']
 
-export default function CalendarModal({ onClose }) {
+export default function CalendarModal({ closing, onClose, onAnimationEnd }) {
   const today = new Date()
   const [display, setDisplay] = useState({ year: today.getFullYear(), month: today.getMonth() })
   const [view, setView] = useState('calendar') // 'calendar' | 'monthPicker' | 'yearPicker'
@@ -77,7 +77,7 @@ export default function CalendarModal({ onClose }) {
   }, [onClose, view, yearPickerReturn])
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
+    <div className={`${styles.overlay} ${closing ? styles.overlayClosing : ''}`} onAnimationEnd={closing ? onAnimationEnd : undefined}>
       <div className={styles.modal} onClick={e => e.stopPropagation()}>
         <div className={styles.header}>
           {view === 'calendar' && (

@@ -33,6 +33,7 @@ export default function Journal() {
   const [deleting, setDeleting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [showCalendar, setShowCalendar] = useState(false)
+  const [calendarClosing, setCalendarClosing] = useState(false)
   const [search, setSearch] = useState('')
   const [userResults, setUserResults] = useState([])
   const [userSearching, setUserSearching] = useState(false)
@@ -546,7 +547,11 @@ export default function Journal() {
       </div>
 
       {showCalendar && (
-        <CalendarModal onClose={() => setShowCalendar(false)} />
+        <CalendarModal
+          closing={calendarClosing}
+          onClose={() => setCalendarClosing(true)}
+          onAnimationEnd={() => { setShowCalendar(false); setCalendarClosing(false) }}
+        />
       )}
     </main>
   )
