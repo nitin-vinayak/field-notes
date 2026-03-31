@@ -6,6 +6,7 @@ import { db, auth } from '../firebase/config'
 import { useAuth } from '../context/AuthContext'
 import { useMapCoords } from '../context/MapCoordsContext'
 import styles from './Journal.module.css'
+import CalendarModal from '../components/CalendarModal'
 
 export default function Journal() {
   const { username: profileUsername } = useParams()
@@ -31,6 +32,9 @@ export default function Journal() {
   const [selected, setSelected] = useState(new Set())
   const [deleting, setDeleting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [showCalendar, setShowCalendar] = useState(false)
+  const [calendarClosing, setCalendarClosing] = useState(false)
+  const [dateFilter, setDateFilter] = useState(null)
   const [search, setSearch] = useState('')
   const [userResults, setUserResults] = useState([])
   const [userSearching, setUserSearching] = useState(false)
@@ -307,7 +311,10 @@ export default function Journal() {
                 ) : (
                   <>
                     {!showDrafts && !showCollections && (
-                      <button onClick={() => { setShowCollections(true); setSearch('') }} className={styles.navBtn}>Collections</button>
+                      <>
+                        <button onClick={() => { setShowCollections(true); setSearch('') }} className={styles.navBtn}>Collections</button>
+                        <button onClick={() => setShowCalendar(true)} className={styles.navBtn}>Cal</button>
+                      </>
                     )}
                     {!showCollections && <button onClick={toggleEditMode} className={styles.editModeBtn}>Edit</button>}
                     <button onClick={handleLogout} className={styles.logoutBtn}>Logout</button>
@@ -332,7 +339,10 @@ export default function Journal() {
               </div>
               <div className={styles.headerRight}>
                 {!showCollections && !collectionView && (
-                  <button onClick={() => { setShowCollections(true); setSearch('') }} className={styles.navBtn}>Collections</button>
+                  <>
+                    <button onClick={() => { setShowCollections(true); setSearch('') }} className={styles.navBtn}>Collections</button>
+                    <button onClick={() => setShowCalendar(true)} className={styles.navBtn}>Cal</button>
+                  </>
                 )}
                 {user
                   ? (myUsername && <button onClick={() => navigate(`/${myUsername}`)} className={styles.navBtn}>My Journal</button>)
@@ -473,6 +483,12 @@ export default function Journal() {
           ) : entries.length > 0 && (() => {
             const filtered = entries.filter(entry => {
               if (activeCollection && entry.collection !== activeCollection) return false
+              if (dateFilter) {
+                const d = entry.date.toDate()
+                if (d.getFullYear() !== dateFilter.getFullYear() ||
+                    d.getMonth() !== dateFilter.getMonth() ||
+                    d.getDate() !== dateFilter.getDate()) return false
+              }
               if (!search.trim()) return true
               const q = search.toLowerCase()
               return entry.title.toLowerCase().includes(q) ||
@@ -481,14 +497,20 @@ export default function Journal() {
                 (entry.collection ?? '').toLowerCase().includes(q)
             })
             return (
-            <div key="feed" className={styles.feed}>
+            <div key={`feed-${dateFilter?.getTime() ?? 'all'}`} className={styles.feed}>
+              {dateFilter && (
+                <div className={styles.activeCollection}>
+                  {dateFilter.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                  <button className={styles.clearCollection} onClick={() => setDateFilter(null)}>×</button>
+                </div>
+              )}
               {activeCollection && (
                 <div className={styles.activeCollection}>
                   {activeCollection}
                   <button className={styles.clearCollection} onClick={() => setActiveCollection(null)}>×</button>
                 </div>
               )}
-              <span className={styles.resultCount} style={{ visibility: search.trim() || activeCollection ? 'visible' : 'hidden' }}>
+              <span className={styles.resultCount} style={{ visibility: search.trim() || activeCollection || dateFilter ? 'visible' : 'hidden' }}>
                 {filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}
               </span>
               {filtered.map(entry => (
@@ -536,6 +558,15 @@ export default function Journal() {
         </div>
 
       </div>
+
+      {showCalendar && (
+        <CalendarModal
+          closing={calendarClosing}
+          onClose={() => setCalendarClosing(true)}
+          onAnimationEnd={() => { setShowCalendar(false); setCalendarClosing(false) }}
+          onSelectDate={date => { setDateFilter(date); setCalendarClosing(true) }}
+        />
+      )}
     </main>
   )
 }
